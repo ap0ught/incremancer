@@ -380,12 +380,30 @@
           }
         }
         
+        function setupSaveEditor() {
+          var btn = document.getElementById('open-save-editor-btn');
+          if (btn && !btn.hasAttribute('data-setup')) {
+            btn.setAttribute('data-setup', 'true');
+            btn.onclick = function() {
+              openSaveEditorModal();
+            };
+          }
+        }
+        
         // Check periodically since Angular may load templates asynchronously
         var checkInterval = setInterval(function() {
           var section = document.getElementById('save-editor-section');
+          var btn = document.getElementById('open-save-editor-btn');
+          
           if (section) {
             toggleSaveEditorSection();
-            clearInterval(checkInterval);
+          }
+          
+          if (btn) {
+            setupSaveEditor();
+            if (section) {
+              clearInterval(checkInterval);
+            }
           }
         }, 500);
         
@@ -394,6 +412,92 @@
           clearInterval(checkInterval);
         }, 10000);
       });
+      
+      // Save Editor Modal Function
+      window.openSaveEditorModal = function() {
+        // Remove existing modal if any
+        var existingModal = document.getElementById('save-editor-modal');
+        if (existingModal) {
+          existingModal.remove();
+        }
+        
+        var modal = document.createElement('div');
+        modal.id = 'save-editor-modal';
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center; color: white;';
+        
+        var saveData = localStorage.getItem('zombieGameSave');
+        var decodedData = '';
+        
+        if (saveData && typeof LZString !== 'undefined') {
+          try {
+            decodedData = LZString.decompressFromEncodedURIComponent(saveData);
+          } catch(e) {
+            decodedData = 'Error decoding save data: ' + e.message;
+          }
+        } else {
+          decodedData = 'No save data found or LZString not available';
+        }
+        
+        var dialogHtml = '<div style="background: #333; padding: 20px; border-radius: 10px; max-width: 90%; max-height: 90%; overflow-y: auto;">' +
+          '<h2 style="color: #fff; margin-top: 0;">Incremancer Save Editor</h2>' +
+          '<p style="color: #ccc;">Edit your save data as JSON. Be careful - invalid JSON will break your save!</p>' +
+          '<textarea style="width: 100%; max-width: 600px; height: 300px; font-family: monospace; background: #222; color: #fff; border: 1px solid #555; padding: 10px;" id="save-data-editor">' + (decodedData || 'No data') + '</textarea>' +
+          '<div style="margin-top: 15px;">' +
+          '<button style="margin: 5px; padding: 10px 15px; background: #666; color: white; border: none; border-radius: 3px; cursor: pointer;" onclick="closeSaveEditor();">Close</button> ' +
+          '<button style="margin: 5px; padding: 10px 15px; background: #4a4; color: white; border: none; border-radius: 3px; cursor: pointer;" onclick="applySaveChanges();">Apply Changes</button> ' +
+          '<button style="margin: 5px; padding: 10px 15px; background: #44a; color: white; border: none; border-radius: 3px; cursor: pointer;" onclick="maxResources();">Max Resources</button>' +
+          '</div></div>';
+        
+        modal.innerHTML = dialogHtml;
+        document.body.appendChild(modal);
+        
+        modal.onclick = function(e) {
+          if (e.target === modal) modal.remove();
+        };
+      };
+      
+      // Save Editor Functions
+      window.closeSaveEditor = function() {
+        var modal = document.getElementById('save-editor-modal');
+        if (modal) modal.remove();
+      };
+      
+      window.applySaveChanges = function() {
+        var textarea = document.getElementById('save-data-editor');
+        if (!textarea) return;
+        
+        try {
+          var newData = JSON.parse(textarea.value);
+          if (typeof LZString !== 'undefined') {
+            localStorage.setItem('zombieGameSave', LZString.compressToEncodedURIComponent(textarea.value));
+            alert('Save data updated! Please refresh the page to see changes.');
+          } else {
+            alert('LZString library not available. Cannot save data.');
+          }
+        } catch(e) {
+          alert('Error parsing JSON: ' + e.message);
+        }
+      };
+      
+      window.maxResources = function() {
+        var textarea = document.getElementById('save-data-editor');
+        if (!textarea) return;
+        
+        try {
+          var current = JSON.parse(textarea.value);
+          current.blood = 999999999;
+          current.brains = 999999999;
+          current.bones = 999999999;
+          current.parts = 999999999;
+          if (current.levelUnlocked) {
+            current.levelUnlocked = Math.max(current.levelUnlocked, 50);
+          }
+          textarea.value = JSON.stringify(current, null, 2);
+          alert('Resources maxed! Click "Apply Changes" to save.');
+        } catch(e) {
+          alert('Error modifying resources: ' + e.message);
+        }
+      };
     </script>
     <title>Incremancer</title>
     <meta name="description" content="Zombie necromancer idle game">
