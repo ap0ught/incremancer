@@ -2,6 +2,12 @@
 
 An idle necromancer game where you command hordes of zombies to ravage small towns and unlock powerful dark magic. This is a modified version by Chalice featuring quality-of-life improvements and enhanced gameplay mechanics.
 
+## 🌐 Play Online
+
+Play the game now at: [https://chalice12.github.io/incremancer/](https://chalice12.github.io/incremancer/)
+
+This repository contains a modernized and enhanced version of the original Incremancer game, with additional features, improved game balance, and numerous quality-of-life upgrades. Command your undead army, collect resources, research dark magic, and conquer increasingly challenging towns in this strategic idle game.
+
 ![Incremancer Start Screen](https://github.com/user-attachments/assets/c75f59fa-9659-4563-a4b0-5656eeebd79b)
 
 ## 🎮 Game Overview
