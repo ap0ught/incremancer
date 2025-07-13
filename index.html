@@ -20,6 +20,74 @@
           });
       });
     </script>
+
+    <!-- Development Debugging Script -->
+    <script>
+      // Development environment detection
+      window.isDevelopment = location.hostname === 'localhost' || 
+                           location.hostname === '127.0.0.1' || 
+                           location.hostname === '0.0.0.0' ||
+                           location.port === '8080';
+      
+      if (window.isDevelopment) {
+        console.log('🚀 Incremancer Development Mode Enabled');
+        console.log('📍 Host:', location.host);
+        console.log('🔧 Debug tools available:');
+        console.log('  - window.debugGame() - Access game state');
+        console.log('  - window.debugAngular() - Access Angular scope');
+        console.log('  - window.debugPixi() - Access PixiJS info');
+        
+        // Enhanced error logging for development
+        window.addEventListener('error', function(e) {
+          console.error('🐛 JavaScript Error:', {
+            message: e.message,
+            filename: e.filename,
+            line: e.lineno,
+            column: e.colno,
+            error: e.error,
+            stack: e.error ? e.error.stack : null
+          });
+        });
+
+        // Log unhandled promise rejections
+        window.addEventListener('unhandledrejection', function(e) {
+          console.error('🚨 Unhandled Promise Rejection:', e.reason);
+        });
+
+        // Debug helper functions
+        window.debugGame = function() {
+          console.log('🎮 Game State:', window.Incremancer || 'Not available');
+          return window.Incremancer;
+        };
+
+        window.debugAngular = function() {
+          try {
+            const scope = angular.element(document.body).scope();
+            console.log('📐 Angular Scope:', scope);
+            return scope;
+          } catch(e) {
+            console.warn('Angular scope not available:', e);
+          }
+        };
+
+        window.debugPixi = function() {
+          console.log('🎨 PixiJS Info:', {
+            version: window.PIXI ? window.PIXI.VERSION : 'Not loaded',
+            renderer: window.PIXI ? 'Available' : 'Not available'
+          });
+          return window.PIXI;
+        };
+
+        // Performance monitoring
+        window.addEventListener('load', function() {
+          setTimeout(function() {
+            const perf = performance.timing;
+            const loadTime = perf.loadEventEnd - perf.navigationStart;
+            console.log('⚡ Page Load Time:', loadTime + 'ms');
+          }, 100);
+        });
+      }
+    </script>
     <title>Incremancer</title>
     <meta name="description" content="Zombie necromancer idle game">
     <meta name="keywords" content="zombie,game,idle,javascript">
