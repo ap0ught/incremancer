@@ -25,11 +25,350 @@
                               new URLSearchParams(window.location.search).get('editor') === 'true';
       console.log('Save editor mode:', window.saveEditorMode, 'URL:', window.location.search);
       
+      // Test function to verify it's accessible
+      window.testSaveEditor = function() {
+        console.log('Test save editor function called!');
+        
+        // Simple modal test
+        var modal = document.createElement('div');
+        modal.style.cssText = `
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+          background: rgba(0,0,0,0.8); z-index: 10000; display: flex; 
+          align-items: center; justify-content: center; color: white;
+        `;
+        modal.innerHTML = `
+          <div style="background: #333; padding: 20px; border-radius: 10px; text-align: center;">
+            <h2>Save Editor Test</h2>
+            <p>Save editor modal is working!</p>
+            <button onclick="this.parentElement.parentElement.remove();" style="margin: 10px; padding: 10px 20px;">Close</button>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        
+        return true;
+      };
+      
       // Simple function to open save editor
       window.openSaveEditor = function() {
         console.log('Opening save editor...');
-        // For now, just show an alert to test
-        alert('Save Editor feature activated! (URL: ' + window.location.search + ')');
+        // Check if we can access the game model
+        var appElement = document.querySelector('[ng-controller="ZombieController as zm"]');
+        console.log('App element found:', !!appElement);
+        if (appElement) {
+          var scope = angular.element(appElement).scope();
+          console.log('Scope found:', !!scope);
+          console.log('ZM found:', !!(scope && scope.zm));
+          console.log('Model found:', !!(scope && scope.zm && scope.zm.model));
+          if (scope && scope.zm && scope.zm.model) {
+            // Create a simple save editor interface
+            showSaveEditorDialog(scope.zm.model);
+          } else {
+            alert('Unable to access game data. Please start a game first.');
+          }
+        } else {
+          alert('Unable to access game controller.');
+        }
+      };
+      
+      // Save editor dialog function
+      window.showSaveEditorDialog = function(gameModel) {
+        // Create modal dialog
+        var modal = document.createElement('div');
+        modal.id = 'save-editor-modal';
+        modal.style.cssText = `
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+          background: rgba(0,0,0,0.8); z-index: 10000; display: flex; 
+          align-items: center; justify-content: center;
+        `;
+        
+        var dialog = document.createElement('div');
+        dialog.style.cssText = `
+          background: #2a2a2a; color: #fff; padding: 20px; border-radius: 10px; 
+          max-width: 80%; max-height: 80%; overflow-y: auto; border: 2px solid #444;
+        `;
+        
+        dialog.innerHTML = `
+          <h2>Incremancer Save Editor</h2>
+          <div style="margin-bottom: 20px;">
+            <button onclick="closeSaveEditor()">Close</button>
+            <button onclick="exportSaveAsJson()">Export JSON</button>
+            <button onclick="refreshSaveEditor()">Refresh</button>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+              <h3>Resources</h3>
+              <div style="margin-bottom: 10px;">
+                <label>Blood: </label>
+                <input type="number" id="edit-blood" value="${gameModel.persistentData.blood || 0}" style="width: 100px;">
+                <button onclick="setResource('blood')">Set</button>
+              </div>
+              <div style="margin-bottom: 10px;">
+                <label>Brains: </label>
+                <input type="number" id="edit-brains" value="${gameModel.persistentData.brains || 0}" style="width: 100px;">
+                <button onclick="setResource('brains')">Set</button>
+              </div>
+              <div style="margin-bottom: 10px;">
+                <label>Bones: </label>
+                <input type="number" id="edit-bones" value="${gameModel.persistentData.bones || 0}" style="width: 100px;">
+                <button onclick="setResource('bones')">Set</button>
+              </div>
+              <div style="margin-bottom: 10px;">
+                <label>Parts: </label>
+                <input type="number" id="edit-parts" value="${gameModel.persistentData.parts || 0}" style="width: 100px;">
+                <button onclick="setResource('parts')">Set</button>
+              </div>
+              <div style="margin-bottom: 10px;">
+                <label>Level: </label>
+                <input type="number" id="edit-level" value="${gameModel.level || 1}" style="width: 100px;">
+                <button onclick="setLevel()">Set</button>
+              </div>
+            </div>
+            
+            <div>
+              <h3>Quick Actions</h3>
+              <button onclick="giveMaxResources()" style="margin: 5px;">Max Resources</button>
+              <button onclick="unlockAllUpgrades()" style="margin: 5px;">Unlock All Upgrades</button>
+              <button onclick="maxAllConstructions()" style="margin: 5px;">Max Constructions</button>
+              <button onclick="generateItems()" style="margin: 5px;">Generate 10 Items</button>
+              
+              <h3>Upgrade Editor</h3>
+              <div style="max-height: 200px; overflow-y: auto; border: 1px solid #555; padding: 10px;">
+                <div id="upgrades-list"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div style="margin-top: 20px;">
+            <h3>JSON Editor</h3>
+            <textarea id="json-editor" style="width: 100%; height: 150px; font-family: monospace; background: #333; color: #fff; border: 1px solid #555;" placeholder="Export JSON first to see save data"></textarea>
+            <div style="margin-top: 10px;">
+              <button onclick="applyJsonChanges()">Apply JSON Changes</button>
+              <button onclick="resetJsonEditor()">Reset JSON</button>
+            </div>
+          </div>
+          
+          <div id="editor-status" style="margin-top: 10px; padding: 10px; background: #444; border-radius: 5px; display: none;"></div>
+        `;
+        
+        modal.appendChild(dialog);
+        document.body.appendChild(modal);
+        
+        // Store reference to game model
+        window.currentGameModel = gameModel;
+        
+        // Populate upgrades list
+        populateUpgradesList();
+        
+        // Focus on modal
+        modal.onclick = function(e) {
+          if (e.target === modal) closeSaveEditor();
+        };
+      };
+      
+      // Save editor functions
+      window.closeSaveEditor = function() {
+        var modal = document.getElementById('save-editor-modal');
+        if (modal) modal.remove();
+        window.currentGameModel = null;
+      };
+      
+      window.refreshSaveEditor = function() {
+        if (window.currentGameModel) {
+          closeSaveEditor();
+          showSaveEditorDialog(window.currentGameModel);
+        }
+      };
+      
+      window.setResource = function(resourceName) {
+        var input = document.getElementById('edit-' + resourceName);
+        var value = parseInt(input.value);
+        if (!isNaN(value) && value >= 0) {
+          window.currentGameModel.persistentData[resourceName] = value;
+          window.currentGameModel.saveData();
+          showStatus(resourceName.charAt(0).toUpperCase() + resourceName.slice(1) + ' set to ' + value, 'success');
+        }
+      };
+      
+      window.setLevel = function() {
+        var input = document.getElementById('edit-level');
+        var value = parseInt(input.value);
+        if (!isNaN(value) && value > 0) {
+          window.currentGameModel.level = value;
+          window.currentGameModel.persistentData.levelUnlocked = Math.max(window.currentGameModel.persistentData.levelUnlocked || 1, value);
+          window.currentGameModel.saveData();
+          showStatus('Level set to ' + value, 'success');
+        }
+      };
+      
+      window.giveMaxResources = function() {
+        var model = window.currentGameModel;
+        model.persistentData.blood = 999999999;
+        model.persistentData.brains = 999999999;
+        model.persistentData.bones = 999999999;
+        model.persistentData.parts = 999999999;
+        model.saveData();
+        showStatus('All resources maxed!', 'success');
+        refreshSaveEditor();
+      };
+      
+      window.unlockAllUpgrades = function() {
+        var model = window.currentGameModel;
+        if (model.persistentData.upgrades) {
+          for (var i = 0; i < model.persistentData.upgrades.length; i++) {
+            model.persistentData.upgrades[i].rank = Math.max(model.persistentData.upgrades[i].rank, 1);
+          }
+          model.saveData();
+          showStatus('All upgrades unlocked!', 'success');
+          populateUpgradesList();
+        }
+      };
+      
+      window.maxAllConstructions = function() {
+        var model = window.currentGameModel;
+        if (model.persistentData.constructions) {
+          for (var i = 0; i < model.persistentData.constructions.length; i++) {
+            model.persistentData.constructions[i].rank = 1;
+            model.persistentData.constructions[i].effect = 1;
+          }
+          model.saveData();
+          showStatus('All constructions maxed!', 'success');
+        }
+      };
+      
+      window.generateItems = function() {
+        var model = window.currentGameModel;
+        if (!model.persistentData.skeleton) {
+          model.persistentData.skeleton = { items: [], level: 1 };
+        }
+        if (!model.persistentData.skeleton.items) {
+          model.persistentData.skeleton.items = [];
+        }
+        
+        var baseLevel = model.persistentData.skeleton.level || 1;
+        var items = model.persistentData.skeleton.items;
+        
+        for (var i = 0; i < 10; i++) {
+          var item = generateRandomItem(baseLevel, items.length + i + 1);
+          items.push(item);
+        }
+        
+        model.saveData();
+        showStatus('Generated 10 random items!', 'success');
+      };
+      
+      window.generateRandomItem = function(level, id) {
+        var rarities = [1, 2, 3, 4];
+        var weights = [60, 24, 12.8, 3.2];
+        var rarity = weightedChoice(rarities, weights);
+        
+        return {
+          id: id,
+          l: level,
+          s: Math.floor(Math.random() * 7) + 1, // Item type 1-7
+          r: rarity,
+          p: Math.floor(Math.random() * (rarity === 4 ? 5 : rarity === 3 ? 8 : rarity === 2 ? 9 : 11)) + 1,
+          e: rarity > 1 ? [Math.floor(Math.random() * 5) + 1] : [],
+          se: rarity === 4 ? [Math.floor(Math.random() * 8) + 1] : [],
+          q: false
+        };
+      };
+      
+      window.weightedChoice = function(choices, weights) {
+        var total = weights.reduce(function(a, b) { return a + b; }, 0);
+        var random = Math.random() * total;
+        var weightSum = 0;
+        
+        for (var i = 0; i < choices.length; i++) {
+          weightSum += weights[i];
+          if (random <= weightSum) {
+            return choices[i];
+          }
+        }
+        return choices[choices.length - 1];
+      };
+      
+      window.populateUpgradesList = function() {
+        var upgradesList = document.getElementById('upgrades-list');
+        if (!upgradesList || !window.currentGameModel.persistentData.upgrades) return;
+        
+        var upgradeNames = [
+          'Bloodthirst', 'Like Leather', 'Cold Storage', 'Recycling is Cool',
+          'Your Soul is Mine', 'Infected Bite', 'Detonate', 'Gigazombies',
+          'Sharpened Teeth', 'Thick Skull', 'Razor Claws', 'Battle Hardened',
+          'Blazing Speed', 'Spit it Out', 'Runic Syphon', 'Killer Instinct',
+          'Tough as Nails', 'Faster Harpies', 'Energy Rush', 'Master Summoner',
+          'Primal Reflexes', 'Blood Harvest', 'Unholy Construction', 'Infected Corpse',
+          'Energy Charge', 'What Doesn\\'t Kill You', 'One is Never Enough', 'Tank Buster',
+          'Improved Spikes', 'Bone Throne', 'Crown of Bones', 'Bonebarrows',
+          'Bone Reinforced Tanks', 'Brain Cage', 'Earth Freeze', 'Plague Armor',
+          'Bulletproof', 'Bombs Away', 'Extra Limbs', 'Big Boned',
+          'Blood Storage', 'Blood Rate', 'Brain Storage', 'Brain Rate',
+          'Bone Rate', 'A Small Investment', 'Time Warp', 'Master of Death',
+          'Parts Rate', 'Auto Construction', 'Graveyard Health', 'Auto Shop',
+          'Talent Point'
+        ];
+        
+        var html = '';
+        for (var i = 0; i < window.currentGameModel.persistentData.upgrades.length; i++) {
+          var upgrade = window.currentGameModel.persistentData.upgrades[i];
+          var name = upgradeNames[i] || 'Unknown ' + i;
+          html += '<div style="margin: 2px 0; font-size: 12px;">' +
+                  '<span style="display: inline-block; width: 150px;">' + name + ':</span>' +
+                  '<input type="number" id="upgrade-' + i + '" value="' + upgrade.rank + '" style="width: 50px;">' +
+                  '<button onclick="setUpgrade(' + i + ')" style="margin-left: 5px;">Set</button>' +
+                  '</div>';
+        }
+        upgradesList.innerHTML = html;
+      };
+      
+      window.setUpgrade = function(index) {
+        var input = document.getElementById('upgrade-' + index);
+        var value = parseInt(input.value);
+        if (!isNaN(value) && value >= 0) {
+          window.currentGameModel.persistentData.upgrades[index].rank = value;
+          window.currentGameModel.saveData();
+          showStatus('Upgrade ' + index + ' set to rank ' + value, 'success');
+        }
+      };
+      
+      window.exportSaveAsJson = function() {
+        var jsonEditor = document.getElementById('json-editor');
+        if (jsonEditor && window.currentGameModel) {
+          jsonEditor.value = JSON.stringify(window.currentGameModel.persistentData, null, 2);
+          showStatus('Save data exported to JSON editor', 'success');
+        }
+      };
+      
+      window.resetJsonEditor = function() {
+        exportSaveAsJson();
+      };
+      
+      window.applyJsonChanges = function() {
+        var jsonEditor = document.getElementById('json-editor');
+        if (jsonEditor && window.currentGameModel) {
+          try {
+            var newData = JSON.parse(jsonEditor.value);
+            Object.assign(window.currentGameModel.persistentData, newData);
+            window.currentGameModel.saveData();
+            showStatus('JSON changes applied successfully!', 'success');
+            refreshSaveEditor();
+          } catch (error) {
+            showStatus('Error applying JSON: ' + error.message, 'error');
+          }
+        }
+      };
+      
+      window.showStatus = function(message, type) {
+        var status = document.getElementById('editor-status');
+        if (status) {
+          status.textContent = message;
+          status.style.display = 'block';
+          status.style.backgroundColor = type === 'success' ? '#4a4' : '#a44';
+          setTimeout(function() {
+            status.style.display = 'none';
+          }, 3000);
+        }
       };
       
       // Hide/show save editor section based on URL parameter
