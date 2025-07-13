@@ -51,3 +51,6 @@ Thumbs.db
 .idea/dictionaries
 .idea/shelf
 .idea/codeStyles
+
+# GitHub Pages - ensure workflow directory is tracked
+!.github/
