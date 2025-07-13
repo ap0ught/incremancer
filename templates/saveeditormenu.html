@@ -1,0 +1,99 @@
+<div class="shop" ng-if="zm.sidePanels.saveEditor">
+  <div class="shop-title">
+    <h2>Save Editor</h2>
+    <button ng-click="zm.closeSidePanels();">Close</button>
+  </div>
+  <div class="upgrades">
+    <div class="upgrade">
+      <h4>Save Data Export/Import</h4>
+      <p>View and edit your save data as JSON</p>
+      <button ng-click="zm.saveEditor.exportSaveToJson();">Export Save as JSON</button>
+      <button ng-click="zm.saveEditor.importFromJsonFile();" ng-if="!zm.saveEditor.showJsonEditor">Import JSON File</button>
+      <input type="file" id="import-json-file" name="import-json-file" accept=".json" hidden ng-change="zm.saveEditor.loadJsonFile($event)" />
+      <button ng-click="zm.saveEditor.toggleJsonEditor();">{{zm.saveEditor.showJsonEditor ? 'Hide' : 'Show'}} JSON Editor</button>
+    </div>
+
+    <div class="upgrade" ng-if="zm.saveEditor.showJsonEditor">
+      <h4>JSON Save Data Editor</h4>
+      <p>Edit save data directly. Be careful - invalid JSON will break your save!</p>
+      <textarea ng-model="zm.saveEditor.jsonData" style="width: 100%; height: 200px; font-family: monospace; font-size: 12px;"></textarea>
+      <button ng-click="zm.saveEditor.applyJsonChanges();">Apply Changes</button>
+      <button ng-click="zm.saveEditor.resetJsonData();">Reset to Current Save</button>
+    </div>
+
+    <div class="upgrade">
+      <h4>Resource Editor</h4>
+      <p>Modify your current resources</p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div>
+          <label>Blood: </label>
+          <input type="number" ng-model="zm.saveEditor.resources.blood" style="width: 100px;">
+          <button ng-click="zm.saveEditor.setResource('blood');">Set</button>
+        </div>
+        <div>
+          <label>Brains: </label>
+          <input type="number" ng-model="zm.saveEditor.resources.brains" style="width: 100px;">
+          <button ng-click="zm.saveEditor.setResource('brains');">Set</button>
+        </div>
+        <div>
+          <label>Bones: </label>
+          <input type="number" ng-model="zm.saveEditor.resources.bones" style="width: 100px;">
+          <button ng-click="zm.saveEditor.setResource('bones');">Set</button>
+        </div>
+        <div>
+          <label>Parts: </label>
+          <input type="number" ng-model="zm.saveEditor.resources.parts" style="width: 100px;">
+          <button ng-click="zm.saveEditor.setResource('parts');">Set</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="upgrade">
+      <h4>Level Editor</h4>
+      <p>Modify level and experience</p>
+      <div>
+        <label>Level: </label>
+        <input type="number" ng-model="zm.saveEditor.levelData.level" style="width: 100px;">
+        <button ng-click="zm.saveEditor.setLevel();">Set Level</button>
+      </div>
+      <div ng-if="zm.skeleton()">
+        <label>Skeleton Level: </label>
+        <input type="number" ng-model="zm.saveEditor.levelData.skeletonLevel" style="width: 100px;">
+        <button ng-click="zm.saveEditor.setSkeletonLevel();">Set</button>
+      </div>
+    </div>
+
+    <div class="upgrade">
+      <h4>Quick Upgrade Editor</h4>
+      <p>Set upgrade ranks quickly</p>
+      <select ng-model="zm.saveEditor.selectedUpgrade" ng-options="upgrade.name for upgrade in zm.saveEditor.upgradesList track by upgrade.id">
+        <option value="">Select an upgrade...</option>
+      </select>
+      <input type="number" ng-model="zm.saveEditor.upgradeRank" placeholder="Rank" style="width: 80px;">
+      <button ng-click="zm.saveEditor.setUpgradeRank();" ng-disabled="!zm.saveEditor.selectedUpgrade">Set Rank</button>
+    </div>
+
+    <div class="upgrade">
+      <h4>Quick Construction Editor</h4>
+      <p>Set construction ranks and effects</p>
+      <select ng-model="zm.saveEditor.selectedConstruction" ng-options="construction.name for construction in zm.saveEditor.constructionsList track by construction.id">
+        <option value="">Select a construction...</option>
+      </select>
+      <input type="number" ng-model="zm.saveEditor.constructionRank" placeholder="Rank" style="width: 60px;">
+      <input type="number" ng-model="zm.saveEditor.constructionEffect" placeholder="Effect" style="width: 60px;">
+      <button ng-click="zm.saveEditor.setConstructionValues();" ng-disabled="!zm.saveEditor.selectedConstruction">Set Values</button>
+    </div>
+
+    <div class="upgrade">
+      <h4>Item Generator</h4>
+      <p>Generate random items at your current level</p>
+      <input type="number" ng-model="zm.saveEditor.itemsToGenerate" placeholder="Number of items" style="width: 120px;" min="1" max="50">
+      <button ng-click="zm.saveEditor.generateItems();">Generate Items</button>
+    </div>
+
+    <div class="upgrade" ng-if="zm.saveEditor.message">
+      <h4>Status</h4>
+      <p class="{{zm.saveEditor.messageType}}">{{zm.saveEditor.message}}</p>
+    </div>
+  </div>
+</div>

@@ -19,6 +19,42 @@
             'value': errors++
           });
       });
+
+      // Check URL parameters for save editor mode
+      window.saveEditorMode = new URLSearchParams(window.location.search).has('sedit') || 
+                              new URLSearchParams(window.location.search).get('editor') === 'true';
+      console.log('Save editor mode:', window.saveEditorMode, 'URL:', window.location.search);
+      
+      // Simple function to open save editor
+      window.openSaveEditor = function() {
+        console.log('Opening save editor...');
+        // For now, just show an alert to test
+        alert('Save Editor feature activated! (URL: ' + window.location.search + ')');
+      };
+      
+      // Hide/show save editor section based on URL parameter
+      window.addEventListener('DOMContentLoaded', function() {
+        function toggleSaveEditorSection() {
+          var section = document.getElementById('save-editor-section');
+          if (section) {
+            section.style.display = window.saveEditorMode ? 'block' : 'none';
+          }
+        }
+        
+        // Check periodically since Angular may load templates asynchronously
+        var checkInterval = setInterval(function() {
+          var section = document.getElementById('save-editor-section');
+          if (section) {
+            toggleSaveEditorSection();
+            clearInterval(checkInterval);
+          }
+        }, 500);
+        
+        // Also set a timeout to stop checking after 10 seconds
+        setTimeout(function() {
+          clearInterval(checkInterval);
+        }, 10000);
+      });
     </script>
     <title>Incremancer</title>
     <meta name="description" content="Zombie necromancer idle game">
@@ -34,6 +70,316 @@
     <script src="js/pixi-legacy.min.js"></script>
     <script src="js/angular.min.js"></script>
     <script src="dist/bundle.js"></script>
+    <script>
+      // Extend the Angular app with save editor functionality
+      angular.module('zombieApp').directive('saveEditorMenu', function() {
+        return {
+          templateUrl: './templates/saveeditormenu.html'
+        };
+      });
+
+      // Add save editor functionality to the controller
+      angular.module('zombieApp').run(['$rootScope', function($rootScope) {
+        // Check if save editor mode is enabled
+        $rootScope.saveEditorMode = window.saveEditorMode;
+      }]);
+
+      // Extend ZombieController with save editor functionality
+      angular.module('zombieApp').run(['$timeout', function($timeout) {
+        $timeout(function() {
+          var appElement = document.querySelector('[ng-controller="ZombieController as zm"]');
+          if (appElement) {
+            var scope = angular.element(appElement).scope();
+            if (scope && scope.zm) {
+              // Add save editor mode flag
+              scope.zm.saveEditorMode = window.saveEditorMode;
+              
+              // Add function to open save editor
+              scope.zm.openSaveEditor = function() {
+                scope.zm.closeSidePanels();
+                scope.zm.sidePanels.saveEditor = true;
+                scope.zm.sidePanels.open = true;
+              };
+              
+              // Initialize the save editor controller
+              var saveEditorController = new SaveEditorController(scope);
+            }
+          }
+        }, 1000);
+      }]);
+
+      // Save Editor Controller function
+      function SaveEditorController($scope) {
+        var self = this;
+        
+        // Initialize save editor state
+        self.showJsonEditor = false;
+        self.jsonData = '';
+        self.message = '';
+        self.messageType = '';
+        
+        // Resource editor
+        self.resources = {
+          blood: 0,
+          brains: 0,
+          bones: 0,
+          parts: 0
+        };
+        
+        // Level editor
+        self.levelData = {
+          level: 1,
+          skeletonLevel: 1
+        };
+        
+        // Upgrade editor
+        self.selectedUpgrade = null;
+        self.upgradeRank = 0;
+        self.upgradesList = [];
+        
+        // Construction editor
+        self.selectedConstruction = null;
+        self.constructionRank = 0;
+        self.constructionEffect = 0;
+        self.constructionsList = [];
+        
+        // Item generator
+        self.itemsToGenerate = 1;
+        
+        // Export save as JSON
+        self.exportSaveToJson = function() {
+          try {
+            var saveData = JSON.parse(LZString.decompressFromEncodedURIComponent($scope.zm.model.blob.slice(0, $scope.zm.model.blob.size)));
+            self.jsonData = JSON.stringify(saveData, null, 2);
+            var blob = new Blob([self.jsonData], {type: 'application/json'});
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'incremancer_save.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            self.showMessage('Save exported successfully!', 'success');
+          } catch (error) {
+            self.showMessage('Error exporting save: ' + error.message, 'error');
+          }
+        };
+        
+        // Toggle JSON editor
+        self.toggleJsonEditor = function() {
+          self.showJsonEditor = !self.showJsonEditor;
+          if (self.showJsonEditor) {
+            self.resetJsonData();
+          }
+        };
+        
+        // Reset JSON data to current save
+        self.resetJsonData = function() {
+          try {
+            var saveData = $scope.zm.model.persistentData;
+            self.jsonData = JSON.stringify(saveData, null, 2);
+            self.loadCurrentValues();
+          } catch (error) {
+            self.showMessage('Error loading save data: ' + error.message, 'error');
+          }
+        };
+        
+        // Load current values into editors
+        self.loadCurrentValues = function() {
+          var data = $scope.zm.model.persistentData;
+          self.resources.blood = data.blood || 0;
+          self.resources.brains = data.brains || 0;
+          self.resources.bones = data.bones || 0;
+          self.resources.parts = data.parts || 0;
+          self.levelData.level = $scope.zm.model.level || 1;
+          
+          // Load upgrades list
+          if (data.upgrades) {
+            self.upgradesList = data.upgrades.map(function(upgrade, index) {
+              return {
+                id: index,
+                name: self.getUpgradeName(index),
+                rank: upgrade.rank
+              };
+            });
+          }
+          
+          // Load constructions list
+          if (data.constructions) {
+            self.constructionsList = data.constructions.map(function(construction, index) {
+              return {
+                id: index,
+                name: self.getConstructionName(index),
+                rank: construction.rank,
+                effect: construction.effect
+              };
+            });
+          }
+        };
+        
+        // Apply JSON changes
+        self.applyJsonChanges = function() {
+          try {
+            var newData = JSON.parse(self.jsonData);
+            Object.assign($scope.zm.model.persistentData, newData);
+            $scope.zm.model.saveData();
+            self.loadCurrentValues();
+            self.showMessage('Changes applied successfully!', 'success');
+          } catch (error) {
+            self.showMessage('Error applying changes: ' + error.message, 'error');
+          }
+        };
+        
+        // Set resource value
+        self.setResource = function(resourceName) {
+          var value = self.resources[resourceName];
+          if (value >= 0) {
+            $scope.zm.model.persistentData[resourceName] = parseInt(value);
+            $scope.zm.model.saveData();
+            self.showMessage(resourceName.charAt(0).toUpperCase() + resourceName.slice(1) + ' set to ' + value, 'success');
+          }
+        };
+        
+        // Set level
+        self.setLevel = function() {
+          if (self.levelData.level > 0) {
+            $scope.zm.model.level = parseInt(self.levelData.level);
+            $scope.zm.model.saveData();
+            self.showMessage('Level set to ' + self.levelData.level, 'success');
+          }
+        };
+        
+        // Set skeleton level
+        self.setSkeletonLevel = function() {
+          if (self.levelData.skeletonLevel > 0 && $scope.zm.model.persistentData.skeleton) {
+            $scope.zm.model.persistentData.skeleton.level = parseInt(self.levelData.skeletonLevel);
+            $scope.zm.model.saveData();
+            self.showMessage('Skeleton level set to ' + self.levelData.skeletonLevel, 'success');
+          }
+        };
+        
+        // Set upgrade rank
+        self.setUpgradeRank = function() {
+          if (self.selectedUpgrade && self.upgradeRank >= 0) {
+            $scope.zm.model.persistentData.upgrades[self.selectedUpgrade.id].rank = parseInt(self.upgradeRank);
+            $scope.zm.model.saveData();
+            self.showMessage(self.selectedUpgrade.name + ' rank set to ' + self.upgradeRank, 'success');
+            self.loadCurrentValues();
+          }
+        };
+        
+        // Set construction values
+        self.setConstructionValues = function() {
+          if (self.selectedConstruction && self.constructionRank >= 0 && self.constructionEffect >= 0) {
+            var construction = $scope.zm.model.persistentData.constructions[self.selectedConstruction.id];
+            construction.rank = parseInt(self.constructionRank);
+            construction.effect = parseInt(self.constructionEffect);
+            $scope.zm.model.saveData();
+            self.showMessage(self.selectedConstruction.name + ' values updated', 'success');
+            self.loadCurrentValues();
+          }
+        };
+        
+        // Generate items
+        self.generateItems = function() {
+          if (self.itemsToGenerate > 0 && self.itemsToGenerate <= 50) {
+            var items = $scope.zm.model.persistentData.skeleton.items || [];
+            var baseLevel = $scope.zm.model.persistentData.skeleton.level || 1;
+            
+            for (var i = 0; i < self.itemsToGenerate; i++) {
+              var item = self.generateRandomItem(baseLevel, items.length + i + 1);
+              items.push(item);
+            }
+            
+            $scope.zm.model.persistentData.skeleton.items = items;
+            $scope.zm.model.saveData();
+            self.showMessage('Generated ' + self.itemsToGenerate + ' items', 'success');
+          }
+        };
+        
+        // Generate random item
+        self.generateRandomItem = function(level, id) {
+          var rarities = [1, 2, 3, 4];
+          var weights = [60, 24, 12.8, 3.2];
+          var rarity = self.weightedChoice(rarities, weights);
+          
+          return {
+            id: id,
+            l: level,
+            s: Math.floor(Math.random() * 7) + 1, // Item type 1-7
+            r: rarity,
+            p: Math.floor(Math.random() * (rarity === 4 ? 5 : rarity === 3 ? 8 : rarity === 2 ? 9 : 11)) + 1,
+            e: rarity > 1 ? [Math.floor(Math.random() * 5) + 1] : [],
+            se: rarity === 4 ? [Math.floor(Math.random() * 8) + 1] : [],
+            q: false
+          };
+        };
+        
+        // Weighted choice helper
+        self.weightedChoice = function(choices, weights) {
+          var total = weights.reduce(function(a, b) { return a + b; }, 0);
+          var random = Math.random() * total;
+          var weightSum = 0;
+          
+          for (var i = 0; i < choices.length; i++) {
+            weightSum += weights[i];
+            if (random <= weightSum) {
+              return choices[i];
+            }
+          }
+          return choices[choices.length - 1];
+        };
+        
+        // Show message
+        self.showMessage = function(msg, type) {
+          self.message = msg;
+          self.messageType = type;
+          setTimeout(function() {
+            self.message = '';
+            $scope.$apply();
+          }, 3000);
+        };
+        
+        // Get upgrade name by index
+        self.getUpgradeName = function(index) {
+          var names = [
+            'Bloodthirst', 'Like Leather', 'Cold Storage', 'Recycling is Cool',
+            'Your Soul is Mine', 'Infected Bite', 'Detonate', 'Gigazombies',
+            'Sharpened Teeth', 'Thick Skull', 'Razor Claws', 'Battle Hardened',
+            'Blazing Speed', 'Spit it Out', 'Runic Syphon', 'Killer Instinct',
+            'Tough as Nails', 'Faster Harpies', 'Energy Rush', 'Master Summoner',
+            'Primal Reflexes', 'Blood Harvest', 'Unholy Construction', 'Infected Corpse',
+            'Energy Charge', 'What Doesn\'t Kill You', 'One is Never Enough', 'Tank Buster',
+            'Improved Spikes', 'Bone Throne', 'Crown of Bones', 'Bonebarrows',
+            'Bone Reinforced Tanks', 'Brain Cage', 'Earth Freeze', 'Plague Armor',
+            'Bulletproof', 'Bombs Away', 'Extra Limbs', 'Big Boned',
+            'Blood Storage', 'Blood Rate', 'Brain Storage', 'Brain Rate',
+            'Bone Rate', 'A Small Investment', 'Time Warp', 'Master of Death',
+            'Parts Rate', 'Auto Construction', 'Graveyard Health', 'Auto Shop',
+            'Talent Point'
+          ];
+          return names[index] || 'Unknown Upgrade ' + index;
+        };
+        
+        // Get construction name by index
+        self.getConstructionName = function(index) {
+          var names = [
+            'Cursed Graveyard', 'Perimeter Fence', 'Bigger Fence', 'Plague Workshop',
+            'Crypt', 'Bone Fort', 'Bone Fortress', 'Plague Spikes',
+            'Spell Tower', 'Runesmith', 'Bone Citadel', 'Accursed Aviary',
+            'Zombie Cage 1', 'Zombie Cage 2', 'Zombie Cage 3', 'Zombie Cage 4',
+            'Zombie Cage 5', 'Plague Laboratory', 'Part Factory', 'Creature Factory',
+            'Bottomless Pit', 'Harpy Outfitter'
+          ];
+          return names[index] || 'Unknown Construction ' + index;
+        };
+        
+        // Initialize
+        self.loadCurrentValues();
+        
+        // Attach to scope
+        $scope.zm.saveEditor = self;
+      }
+    </script>
     <link rel="stylesheet" type="text/css" href="zombiemancer.css">
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon"/>
   </head>
@@ -104,6 +450,7 @@
     <champions-hold-menu></champions-hold-menu>
     <prestige-menu></prestige-menu>
     <options-menu></options-menu>
+    <save-editor-menu></save-editor-menu>
     <level-select></level-select>
     <level-stats></level-stats>
 

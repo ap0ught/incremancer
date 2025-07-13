@@ -77,6 +77,12 @@
           <button ng-click="zm.model.loadFromPlayFab(true)" ng-if="zm.model.playFabId" class="mt-5" ng-disabled="!zm.model.allowPlayFabAction()">Load from Cloud</button>
           <button ng-click="zm.model.saveToPlayFab()" ng-if="zm.model.playFabId" class="mt-5" ng-disabled="!zm.model.allowPlayFabAction()">Save to Cloud</button>
       </div>
+      <div class="upgrade" id="save-editor-section">
+          <h4>Save Editor</h4>
+          <p>Advanced save editing tools - modify upgrades, constructions, resources, and items</p>
+          <label class="blood">Warning: Advanced feature - backup your save first!</label>
+          <button onclick="openSaveEditor();">Open Save Editor</button>
+      </div>
       <div class="upgrade">
           <h4>Reset Game</h4>
           <p>This will reset all save data if you want to start from the very beginning again.</p>
