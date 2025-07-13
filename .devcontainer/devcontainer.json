@@ -1,0 +1,46 @@
+{
+  "name": "Incremancer Development Environment",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-18-bullseye",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-chrome-debug",
+        "ritwickdey.liveserver",
+        "ms-vscode.vscode-js-debug",
+        "firefox-devtools.vscode-firefox-debug",
+        "hookyqr.beautify",
+        "christian-kohler.path-intellisense",
+        "formulahendry.auto-rename-tag",
+        "ms-vscode.vscode-json",
+        "ms-vscode.live-server"
+      ],
+      "settings": {
+        "liveServer.settings.port": 8080,
+        "liveServer.settings.CustomBrowser": "chrome",
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "forwardPorts": [8080, 9222],
+  "portsAttributes": {
+    "8080": {
+      "label": "Game Server",
+      "onAutoForward": "notify"
+    },
+    "9222": {
+      "label": "Chrome Debug Port",
+      "onAutoForward": "silent"
+    }
+  },
+  "postCreateCommand": "npm install",
+  "postStartCommand": "echo 'Development environment ready! Run: npm run dev'",
+  "remoteUser": "node",
+  "workspaceFolder": "/workspaces/incremancer"
+}

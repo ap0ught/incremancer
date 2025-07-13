@@ -1,0 +1,33 @@
+{
+  "name": "incremancer",
+  "version": "1.0.0",
+  "description": "Idle Necromancer Game - Development Environment",
+  "main": "index.html",
+  "scripts": {
+    "dev": "live-server --port=8080 --open=/",
+    "start": "live-server --port=8080 --open=/",
+    "debug": "live-server --port=8080 --open=/ --verbose",
+    "serve": "python3 -m http.server 8080"
+  },
+  "keywords": [
+    "game",
+    "idle",
+    "zombie",
+    "javascript",
+    "angularjs",
+    "pixijs"
+  ],
+  "author": "ap0ught",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "engines": {
+    "node": ">=12.0.0"
+  }
+}

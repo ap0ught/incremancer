@@ -1,0 +1,111 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "liveServer.settings.port": 8080,
+    "liveServer.settings.root": "/",
+    "liveServer.settings.CustomBrowser": "chrome",
+    "liveServer.settings.AdvanceCustomBrowserCmdLine": "--auto-open-devtools-for-tabs",
+    "files.associations": {
+      "*.html": "html",
+      "*.js": "javascript",
+      "*.css": "css",
+      "*.json": "json"
+    },
+    "emmet.includeLanguages": {
+      "javascript": "javascriptreact"
+    },
+    "javascript.preferences.includePackageJsonAutoImports": "off",
+    "debug.console.fontSize": 14,
+    "debug.console.lineHeight": 20
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Launch Chrome with Debugging",
+        "type": "chrome",
+        "request": "launch",
+        "url": "http://localhost:8080",
+        "webRoot": "${workspaceFolder}",
+        "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-data",
+        "runtimeArgs": [
+          "--disable-web-security",
+          "--disable-features=VizDisplayCompositor",
+          "--auto-open-devtools-for-tabs"
+        ],
+        "sourceMaps": true,
+        "trace": true
+      },
+      {
+        "name": "Attach to Chrome",
+        "type": "chrome",
+        "request": "attach",
+        "port": 9222,
+        "webRoot": "${workspaceFolder}",
+        "sourceMaps": true
+      },
+      {
+        "name": "Launch with Live Server",
+        "type": "chrome",
+        "request": "launch",
+        "url": "http://localhost:8080",
+        "webRoot": "${workspaceFolder}",
+        "preLaunchTask": "Start Live Server"
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Start Live Server",
+        "type": "shell",
+        "command": "npm",
+        "args": ["run", "dev"],
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "isBackground": true,
+        "problemMatcher": {
+          "owner": "live-server",
+          "pattern": {
+            "regexp": "^(.*)$",
+            "file": 1
+          },
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "^.*Starting.*$",
+            "endsPattern": "^.*Serving.*$"
+          }
+        }
+      },
+      {
+        "label": "Stop Live Server",
+        "type": "shell",
+        "command": "pkill",
+        "args": ["-f", "live-server"],
+        "group": "build"
+      }
+    ]
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-vscode.vscode-chrome-debug",
+      "ritwickdey.liveserver",
+      "ms-vscode.vscode-js-debug",
+      "firefox-devtools.vscode-firefox-debug",
+      "hookyqr.beautify",
+      "christian-kohler.path-intellisense",
+      "formulahendry.auto-rename-tag",
+      "ms-vscode.vscode-json"
+    ]
+  }
+}
