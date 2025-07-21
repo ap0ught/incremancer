@@ -288,6 +288,7 @@
         return choices[choices.length - 1];
       };
       
+      // Populates the upgrades list in the save editor modal with current upgrade ranks and names.
       window.populateUpgradesList = function() {
         var upgradesList = document.getElementById('upgrades-list');
         if (!upgradesList || !window.currentGameModel.persistentData.upgrades) return;
